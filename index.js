@@ -23,7 +23,7 @@ require('dotenv').config();
   await ppyLogin(page);
   await duoLogin(page);
 
-  const coursesCodes = getCourseCodes(VSB_url);
+  const courseCodes = getCourseCodes(VSB_url);
   const catalogCodes = getCatalogCodes(VSB_url);
 
   console.log("And we are in?");
@@ -96,7 +96,9 @@ function getCatalogCodes(url) {
 
   const catalogCodes = catalogParams.map(item => {
     const parts = item.split('_');
-    const catalogueCode = parts.slice(3).join('_').substring(0,6);;
+    let catalogueCode = parts.slice(3).join('_');
+    catalogueCode = catalogueCode.replace(/-/g, ''); // remove "-" characters from string
+    catalogueCode = catalogueCode.splice(-6); // only keep last 6 characters (size of a catalog code)
     return catalogueCode;
   });
 
