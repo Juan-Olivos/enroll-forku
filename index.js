@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer');
 const Course = require('./course');
 const readline = require('readline');
 const fs = require('fs');
+const UsedDuoCodeException = require('./exception');
 require('dotenv').config();
 
 (async () => {
@@ -31,13 +32,19 @@ require('dotenv').config();
   }
 
   await page.goto(VSB_url);
-  await new Promise(resolve => setTimeout(resolve, 3000));
 
   // If cookies expired, relogin.
   if (!page.url().includes("schedulebuilder")) {
 
     await ppyLogin(page);
-    await duoLogin(page);
+    try {
+      await duoLogin(page);
+    } catch (error) {
+      console.log(error);
+      await browser.close();
+      return;
+    }
+    
 
     const currentCookies = await page.cookies();
 
@@ -54,6 +61,7 @@ require('dotenv').config();
 async function ppyLogin(page) {
 
   console.log("PPY: logging in...");
+  await page.waitForSelector("#mli");
   await page.type('#mli', process.env.PPY_USERNAME);
   await page.type('#password', process.env.PPY_PASSWORD);
   
@@ -81,6 +89,10 @@ async function duoLogin(page) {
 
   console.log("sleeping for 10 seconds...");
   await new Promise(resolve => setTimeout(resolve, 10000));
+
+  if(!page.url().includes("schedulebuilder")) {
+    throw new UsedDuoCodeException();
+  }
 
   console.log("done with DUO login");
 }
