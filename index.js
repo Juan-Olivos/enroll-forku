@@ -1,7 +1,13 @@
 const puppeteer = require('puppeteer');
+const Course = require('./course');
+const readline = require('readline');
+const fs = require('fs');
 require('dotenv').config();
 
 (async () => {
+
+  const listOfCourses = await promptCourses();
+  
   const browser = await puppeteer.launch({
     headless: 'new',
     args: [
@@ -13,29 +19,33 @@ require('dotenv').config();
   });
 
   const page = await browser.newPage();
+ 
+  //FW2023-2024 URL
+  const VSB_url = 'https://schedulebuilder.yorku.ca/vsb/criteria.jsp?access=0&lang=en&tip=1&page=results&scratch=0&term=2023102119&sort=none&filters=iiiiiiii&bbs=&ds=&cams=0_1_2_3_4_5_6_7_8&locs=any';
 
-  const VSB_url = 'https://schedulebuilder.yorku.ca/vsb/criteria.jsp?access=0&lang=en&tip=1&page=results&scratch=0&term=2023102119&sort=none&filters=iiiiiiii&bbs=013IJ012NV014IV015IV016IV013NV236NV236IJ235IV232IV233IV234IV012KL&ds=5728-5844-5845-5943&cams=0_1_2_3_4_5_6&locs=any&course_0_0=LE-EECS-4415-3.00-EN-&sa_0_0=&cs_0_0=--2023070_P84Y01--&cpn_0_0=&csn_0_0=&ca_0_0=&dropdown_0_0=us_--2023070_P84Y01--&ig_0_0=0&rq_0_0=&course_1_0=AP-POLS-3070-3.00-EN-&sa_1_0=&cs_1_0=--2023087_K57F01--&cpn_1_0=&csn_1_0=&ca_1_0=&dropdown_1_0=al&ig_1_0=0&rq_1_0=&course_2_0=AP-ECON-1000-3.00-EN-&sa_2_0=&cs_2_0=--2023070_W56F01-W56F02-&cpn_2_0=F&csn_2_0=B&ca_2_0=&dropdown_2_0=al&ig_2_0=0&rq_2_0=';
+  const cookiesFilePath = './cookies.json';
+  if (fs.existsSync(cookiesFilePath)) {
+    const cookies = require(cookiesFilePath);
+    // Load page with old cookies.
+    await page.setCookie(...cookies);
+  }
 
   await page.goto(VSB_url);
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
-  await page.screenshot({ path: 'test1.png' }); 
+  // If cookies expired, relogin.
+  if (!page.url().includes("schedulebuilder")) {
 
-  await ppyLogin(page);
-  await duoLogin(page);
+    await ppyLogin(page);
+    await duoLogin(page);
 
-  const courseCodes = getCourseCodes(VSB_url);
-  const catalogCodes = getCatalogCodes(VSB_url);
+    const currentCookies = await page.cookies();
 
-  console.log("And we are in?");
-  await page.screenshot({ path: 'test5.png' });
+    // Save cookies
+    fs.writeFileSync(cookiesFilePath, JSON.stringify(currentCookies));
+  }
 
-  console.log("reloading page.");
-  await page.reload();
-  console.log("sleeping for 10 seconds...");
-  await new Promise(resolve => setTimeout(resolve, 10000));
-
-  await page.screenshot({ path: 'test6.png' }); 
-  console.log("done");
+  await updateCourseStates(page, listOfCourses);
 
   await browser.close();
 })();
@@ -44,10 +54,8 @@ require('dotenv').config();
 async function ppyLogin(page) {
 
   console.log("PPY: logging in...");
-  await page.type('#mli', process.env.PPY_USERNAME); // Username box
-  await page.type('#password', process.env.PPY_PASSWORD); // Password box
-
-  await page.screenshot({ path: 'test2.png' });
+  await page.type('#mli', process.env.PPY_USERNAME);
+  await page.type('#password', process.env.PPY_PASSWORD);
   
   const button = 'body > div.container.page-content > div.row > div:nth-child(1) > form > div:nth-child(2) > div.col-md-8 > p:nth-child(2) > input';
   await page.waitForSelector(button);
@@ -61,17 +69,15 @@ async function ppyLogin(page) {
 
 async function duoLogin(page) {
   console.log("Signing into duo...");
-  await page.screenshot({ path: 'test3.png' });
 
   const frames = page.frames();
   const duoF = frames[1];
   if (duoF) {
+      await duoF.click("#login-form > div:nth-child(17) > div > label > input[type=checkbox]")
       await duoF.$eval('#passcode', el => el.click());
       await duoF.$eval('.passcode-input', (el, duocode) => { el.value = duocode }, process.env.DUOCODE);
       await duoF.$eval('#passcode', el => el.click());
   }
-
-  await page.screenshot({ path: 'test4.png' });
 
   console.log("sleeping for 10 seconds...");
   await new Promise(resolve => setTimeout(resolve, 10000));
@@ -79,28 +85,78 @@ async function duoLogin(page) {
   console.log("done with DUO login");
 }
 
-function getCourseCodes(url) {
-  const parameters = url.split('&');
-
-  const courseParams = parameters.filter(param => param.startsWith('course_'));
-
-  const courseCodes = courseParams.map(item => item.substring(item.indexOf('=')+1));
-
-  return courseCodes;
-}
-
-function getCatalogCodes(url) {
-  const parameters = url.split('&');
-
-  const catalogParams = parameters.filter(param => param.startsWith('cs_'));
-
-  const catalogCodes = catalogParams.map(item => {
-    const parts = item.split('_');
-    let catalogueCode = parts.slice(3).join('_');
-    catalogueCode = catalogueCode.replace(/-/g, ''); // remove "-" characters from string
-    catalogueCode = catalogueCode.splice(-6); // only keep last 6 characters (size of a catalog code)
-    return catalogueCode;
+/* Asks user for the course catalog codes to enroll in */
+async function promptCourses() {
+  const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
   });
 
-  return catalogCodes;
+  return new Promise((resolve, reject) => {
+      rl.question('Please enter the course catalog codes separated by a space:\n', (input) => {
+          rl.close();
+          const courseCodes = input.trim().split(' ');
+          const courses = courseCodes.map(code => new Course(code));
+          resolve(courses);
+      });
+  });
+}
+
+/* Visits VSB to map each Course with either 'Full' or 'Available' */
+async function updateCourseStates(page, listOfCourses) {
+  const courses_selector = ".accessible.ak_c.nav_link.link_criteria.title_font";
+  const result_selector = "#bodyContent > div.mainframe.courses_bg > div.navigation.noprint > div.navigation_buttons > div > ul > li:nth-child(2) > a";
+  const searchbar_selector = '#code_number';
+  const addCourseButton_selector = '#addCourseButton';
+  const seats_selector1 = '#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2) > span:nth-child(3)';
+  const seats_selector2 = `#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(3) > td:nth-child(1)`;
+
+  for (let i = 0; i< listOfCourses.length; i++) {
+
+    await page.waitForSelector(courses_selector);
+    await page.$eval(courses_selector, el => el.click());
+    await page.waitForSelector(searchbar_selector);
+    await page.$eval(searchbar_selector, el => el.click());
+    await page.$eval(searchbar_selector, (el, code) => { el.value = code }, listOfCourses[i].courseCode);
+    await page.waitForSelector(addCourseButton_selector);
+    await page.$eval(addCourseButton_selector, el => el.click());
+    await page.waitForSelector(result_selector);
+    await page.$eval(result_selector, el => el.click());
+  
+    let seats_selector = '';
+    if (listOfCourses[i].courseCode.charAt(listOfCourses[i].courseCode.length-1) === '1') {
+      seats_selector = seats_selector1;
+    } else {
+      seats_selector = seats_selector2;
+    }
+
+    const matchingElements = await page.$$(seats_selector);
+
+    const numberOfMatches = matchingElements.length;
+    if(numberOfMatches > 1) {
+      console.log("2 matches! Extracting right one...");
+      const elHandle = await page.waitForSelector("#legend_box > div.course_box.be0 > div > div > div > label:nth-child(2) > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2)");
+      const text1 = await elHandle.evaluate(el => el.textContent);
+
+      if (text1.includes(listOfCourses[i].courseCode)) {
+        listOfCourses[i].state = await matchingElements[0].evaluate(el => el.textContent);
+      } else {
+        listOfCourses[i].state = await matchingElements[1].evaluate(el => el.textContent);
+      }
+    
+    } else {
+    
+    const elementHandle = await page.waitForSelector(seats_selector);
+    let text = await elementHandle.evaluate(element => element.textContent);
+    
+    listOfCourses[i].state = text;
+    }
+    listOfCourses[i].reformatState();
+    console.log(`${listOfCourses[i].courseCode} | ${listOfCourses[i].state}`);
+    
+    await page.waitForSelector(courses_selector);
+    await page.$eval(courses_selector, el => el.click());
+    await page.waitForSelector(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a > img`);
+    await page.$eval(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a > img`, el => el.click());
+  }
 }
