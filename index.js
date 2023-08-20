@@ -117,7 +117,7 @@ async function promptCourses() {
 /* Visits VSB to map each Course with either 'Full' or 'Available' */
 async function updateCourseStates(page, listOfCourses) {
   const courses_selector = ".accessible.ak_c.nav_link.link_criteria.title_font";
-  const result_selector = "#bodyContent > div.mainframe.courses_bg > div.navigation.noprint > div.navigation_buttons > div > ul > li:nth-child(2) > a";
+  const result_selector = ".accessible.ak_r.nav_link.link_results.title_font";
   const searchbar_selector = '#code_number';
   const addCourseButton_selector = '#addCourseButton';
   const seats_selector1 = '#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2) > span:nth-child(3)';
@@ -168,7 +168,8 @@ async function updateCourseStates(page, listOfCourses) {
     
     await page.waitForSelector(courses_selector);
     await page.$eval(courses_selector, el => el.click());
-    await page.waitForSelector(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a > img`);
-    await page.$eval(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a > img`, el => el.click());
+    await page.waitForSelector(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a`);
+    await page.$eval(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a`, el => el.click());
+    await new Promise(resolve => setTimeout(resolve, 800));
   }
 }
