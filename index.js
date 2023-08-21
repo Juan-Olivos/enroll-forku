@@ -51,8 +51,8 @@ require('dotenv').config();
     // Save cookies
     fs.writeFileSync(cookiesFilePath, JSON.stringify(currentCookies));
   } else {
-    console.log("sleeping for 3 seconds...");
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log("sleeping for 5 seconds...");
+    await new Promise(resolve => setTimeout(resolve, 5000));
   }
 
   await updateCourseStates(page, listOfCourses);
@@ -90,8 +90,8 @@ async function duoLogin(page) {
       await duoF.$eval('#passcode', el => el.click());
   }
 
-  console.log("sleeping for 10 seconds...");
-  await new Promise(resolve => setTimeout(resolve, 10000));
+  console.log("sleeping for 20 seconds...");
+  await new Promise(resolve => setTimeout(resolve, 20000));
 
   if(!page.url().includes("schedulebuilder")) {
     throw new UsedDuoCodeException();
@@ -117,62 +117,60 @@ async function promptCourses() {
   });
 }
 
+const vsbSelectors = {
+  courses: ".accessible.ak_c.nav_link.link_criteria.title_font",
+  result: ".accessible.ak_r.nav_link.link_results.title_font",
+  searchbar: '#code_number',
+  addCourseButton: '#addCourseButton',
+  seats1: '#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2) > span:nth-child(3)',
+  seats2: `#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(3) > td:nth-child(1)`
+};
+
 /* Visits VSB to map each Course with either 'Full' or 'Available' */
 async function updateCourseStates(page, listOfCourses) {
-  const courses_selector = ".accessible.ak_c.nav_link.link_criteria.title_font";
-  const result_selector = ".accessible.ak_r.nav_link.link_results.title_font";
-  const searchbar_selector = '#code_number';
-  const addCourseButton_selector = '#addCourseButton';
-  const seats_selector1 = '#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2) > span:nth-child(3)';
-  const seats_selector2 = `#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(3) > td:nth-child(1)`;
+  for (let i = 0; i < listOfCourses.length; i++) {
+    const course = listOfCourses[i];
 
-  for (let i = 0; i< listOfCourses.length; i++) {
+    await page.waitForSelector(vsbSelectors.courses);
+    await page.$eval(vsbSelectors.courses, el => el.click());
 
-    await page.waitForSelector(courses_selector);
-    await page.$eval(courses_selector, el => el.click());
-    await page.waitForSelector(searchbar_selector);
-    await page.$eval(searchbar_selector, el => el.click());
-    await page.$eval(searchbar_selector, (el, code) => { el.value = code }, listOfCourses[i].courseCode);
-    await page.waitForSelector(addCourseButton_selector);
-    await page.$eval(addCourseButton_selector, el => el.click());
-    await page.waitForSelector(result_selector);
-    await page.$eval(result_selector, el => el.click());
-  
-    let seats_selector = '';
-    if (listOfCourses[i].courseCode.charAt(listOfCourses[i].courseCode.length-1) === '1') {
-      seats_selector = seats_selector1;
-    } else {
-      seats_selector = seats_selector2;
-    }
+    await page.waitForSelector(vsbSelectors.searchbar);
+    await page.$eval(vsbSelectors.searchbar, el => el.value = '');
+    await page.type(vsbSelectors.searchbar, course.courseCode);
 
+    await page.waitForSelector(vsbSelectors.addCourseButton);
+    await page.$eval(vsbSelectors.addCourseButton, el => el.click());
+
+    const seats_selector = course.courseCode.charAt(course.courseCode.length - 1) === '1'
+      ? vsbSelectors.seats1
+      : vsbSelectors.seats2;
+
+    await page.waitForSelector(seats_selector);
     const matchingElements = await page.$$(seats_selector);
-
     const numberOfMatches = matchingElements.length;
-    if(numberOfMatches > 1) {
+
+    if (numberOfMatches > 1) {
       console.log("2 matches! Extracting right one...");
       const elHandle = await page.waitForSelector("#legend_box > div.course_box.be0 > div > div > div > label:nth-child(2) > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2)");
       const text1 = await elHandle.evaluate(el => el.textContent);
 
-      if (text1.includes(listOfCourses[i].courseCode)) {
-        listOfCourses[i].state = await matchingElements[0].evaluate(el => el.textContent);
-      } else {
-        listOfCourses[i].state = await matchingElements[1].evaluate(el => el.textContent);
-      }
-    
+      course.state = text1.includes(course.courseCode)
+        ? await matchingElements[0].evaluate(el => el.textContent)
+        : await matchingElements[1].evaluate(el => el.textContent);
     } else {
-    
-    const elementHandle = await page.waitForSelector(seats_selector);
-    let text = await elementHandle.evaluate(element => element.textContent);
-    
-    listOfCourses[i].state = text;
+      const elementHandle = await page.waitForSelector(seats_selector);
+      course.state = await elementHandle.evaluate(el => el.textContent);
     }
-    listOfCourses[i].reformatState();
-    console.log(`${listOfCourses[i].courseCode} | ${listOfCourses[i].state}`);
-    
-    await page.waitForSelector(courses_selector);
-    await page.$eval(courses_selector, el => el.click());
-    await page.waitForSelector(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a`);
-    await page.$eval(`#requirements > div:nth-child(3) > div.courseDiv.bc${(i%2)+1}.bd${(i%2)+1} > div:nth-child(5) > a`, el => el.click());
-    await new Promise(resolve => setTimeout(resolve, 800));
+
+    course.reformatState();
+    console.log(`${course.courseCode} | ${course.state}`);
+
+    await page.waitForSelector(vsbSelectors.courses);
+    await page.$eval(vsbSelectors.courses, el => el.click());
+
+    const requirementsSelector = `#requirements > div:nth-child(3) > div.courseDiv.bc${(i % 2) + 1}.bd${(i % 2) + 1} > div:nth-child(5) > a`;
+    await page.waitForSelector(requirementsSelector);
+    await page.$eval(requirementsSelector, el => el.click());
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 }
