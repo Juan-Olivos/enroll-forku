@@ -10,7 +10,7 @@ require('dotenv').config();
   const listOfCourses = await promptCourses();
   
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: false,
     args: [
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
@@ -50,6 +50,9 @@ require('dotenv').config();
 
     // Save cookies
     fs.writeFileSync(cookiesFilePath, JSON.stringify(currentCookies));
+  } else {
+    console.log("sleeping for 3 seconds...");
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
 
   await updateCourseStates(page, listOfCourses);
