@@ -56,12 +56,14 @@ require("dotenv").config();
   }
 
   while (listOfCourses.length !== 0) {
+
     if (await isLoggedOut(page)) {
       console.log("logging you back in...");
       await new Promise((resolve) => setTimeout(resolve, 5000));
       await ppyLogin(page);
     }
-    await updateCourseStates(page, listOfCourses);
+    
+    listOfCourses = await updateCourseStates(page, listOfCourses);
 
     const enroll_array = listOfCourses.filter(
       (course) => course.state === "Available" && course.cooldown <= 0

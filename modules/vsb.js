@@ -7,6 +7,7 @@ const vsbSelectors = {
   seatsTutLab: `#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(3) > td:nth-child(1)`,
   removeBox1: `#requirements > div:nth-child(3) > div.courseDiv.bc1.bd1 > div:nth-child(5) > a`,
   removeBox2: `#requirements > div:nth-child(3) > div.courseDiv.bc2.bd2 > div:nth-child(5) > a`
+  // #requirements > div:nth-child(3) > div.courseDiv.bc1.bd1 > div:nth-child(5) > a
 };
 
 /* Visits VSB to map each Course with either 'Full' or 'Available' */
@@ -40,15 +41,30 @@ async function updateCourseStates(page, listOfCourses) {
     const matchingElements = await page.$$(seats_selector);
     const numberOfMatches = matchingElements.length;
 
+    let found = false;
     // Search for the element with matching courseCode. Only this one has accurate 'Seats: Available/Full'.
     for (let i = 0; i < numberOfMatches; i++) {
       const text = await matchingElements[i].evaluate(el => el.textContent);
 
       if (text.includes(course.courseCode)) {
-        console.log(text);
+        // console.log(text);
         course.state = text;
+        found = true;
         break;
       }
+    }
+
+    // Special case. User entered a Lab/Tutorial courseCode, but ending with '1'. So, no tutorial / lab section is specified. 
+    // The VSB search bar will recognize this as a valid code, but it is NOT valid for REM.
+    if (!found) {
+      console.log(`${course.courseCode} - Lab/Tutorial courses should NOT end in '1', please check again.`);
+      console.log("Continuing execution WITHOUT this catalogue code");
+      try {
+        await page.$eval(vsbSelectors.removeBox1, el => el.click());
+      } catch (error) {
+        await page.$eval(vsbSelectors.removeBox2, el => el.click());
+      }
+      return listOfCourses.filter((c) => c.courseCode !== course.courseCode);
     }
 
     course.reformatState();
@@ -64,6 +80,7 @@ async function updateCourseStates(page, listOfCourses) {
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
+  return listOfCourses;
 }
 
 module.exports = {
