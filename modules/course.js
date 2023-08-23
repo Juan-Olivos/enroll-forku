@@ -14,6 +14,10 @@ class Course {
       this.state = "ERROR";
     }
   }
+
+  applyEnrollmentCooldown() {
+    this.cooldown = 180;
+  }
 }
 
 module.exports = Course;

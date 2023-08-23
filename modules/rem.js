@@ -57,7 +57,7 @@ async function enroll(browser, listOfCourses, enroll_array) {
 
       } else if (reason.includes("The spaces in this course are reserved.")) {
         course.state = "Reserved";
-        course.cooldown = 240;
+        course.applyEnrollmentCooldown();
         console.log(`${courseName}(${course.courseCode}) is reserved. Re-adding to queue with 2 hour cooldown.`);
 
       } else if (reason.includes("You are currently enrolled in this course.")) {
