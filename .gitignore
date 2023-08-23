@@ -2,3 +2,4 @@
 *.png
 test.js
 cookies.json
+.vscode
