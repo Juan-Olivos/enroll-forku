@@ -3,15 +3,23 @@ const vsbSelectors = {
   result: ".accessible.ak_r.nav_link.link_results.title_font",
   searchbar: '#code_number',
   addCourseButton: '#addCourseButton',
-  seats1: '#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2) > span:nth-child(3)',
-  seats2: `#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(3) > td:nth-child(1)`,
-  seats3: `#legend_box > div.course_box.be0 > div > div > div > label:nth-child(2) > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2)`
+  seatsTerm: `#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2)`,
+  seatsTutLab: `#legend_box > div.course_box.be0 > div > div > div > label > div > div.selection_table > table > tbody > tr:nth-child(3) > td:nth-child(1)`,
+  removeBox1: `#requirements > div:nth-child(3) > div.courseDiv.bc1.bd1 > div:nth-child(5) > a`,
+  removeBox2: `#requirements > div:nth-child(3) > div.courseDiv.bc2.bd2 > div:nth-child(5) > a`
 };
 
 /* Visits VSB to map each Course with either 'Full' or 'Available' */
 async function updateCourseStates(page, listOfCourses) {
   for (let i = 0; i < listOfCourses.length; i++) {
     const course = listOfCourses[i];
+
+    try {
+      await page.waitForSelector(vsbSelectors.result, { timeout: 5000 });
+      await page.$eval(vsbSelectors.result, el => el.click());
+    } catch (error) {
+      // Ignoring error intentionally because the selector might not be found but that's okay
+    }
 
     await page.waitForSelector(vsbSelectors.courses);
     await page.$eval(vsbSelectors.courses, el => el.click());
@@ -23,24 +31,24 @@ async function updateCourseStates(page, listOfCourses) {
     await page.waitForSelector(vsbSelectors.addCourseButton);
     await page.$eval(vsbSelectors.addCourseButton, el => el.click());
 
+    // If a courseCode ends with 1, it is a non-lab/tutorial course.
     const seats_selector = course.courseCode.charAt(course.courseCode.length - 1) === '1'
-      ? vsbSelectors.seats1
-      : vsbSelectors.seats2;
+      ? vsbSelectors.seatsTerm
+      : vsbSelectors.seatsTutLab;
 
     await page.waitForSelector(seats_selector);
     const matchingElements = await page.$$(seats_selector);
     const numberOfMatches = matchingElements.length;
 
-    if (numberOfMatches > 1) {
-      const elHandle = await page.waitForSelector(seats3);
-      const text1 = await elHandle.evaluate(el => el.textContent);
+    // Search for the element with matching courseCode. Only this one has accurate 'Seats: Available/Full'.
+    for (let i = 0; i < numberOfMatches; i++) {
+      const text = await matchingElements[i].evaluate(el => el.textContent);
 
-      course.state = text1.includes(course.courseCode)
-        ? await matchingElements[0].evaluate(el => el.textContent)
-        : await matchingElements[1].evaluate(el => el.textContent);
-    } else {
-      const elementHandle = await page.waitForSelector(seats_selector);
-      course.state = await elementHandle.evaluate(el => el.textContent);
+      if (text.includes(course.courseCode)) {
+        console.log(text);
+        course.state = text;
+        break;
+      }
     }
 
     course.reformatState();
@@ -49,9 +57,11 @@ async function updateCourseStates(page, listOfCourses) {
     await page.waitForSelector(vsbSelectors.courses);
     await page.$eval(vsbSelectors.courses, el => el.click());
 
-    const removeBoxSelector = `#requirements > div:nth-child(3) > div.courseDiv.bc${(i % 2) + 1}.bd${(i % 2) + 1} > div:nth-child(5) > a`;
-    await page.waitForSelector(removeBoxSelector);
-    await page.$eval(removeBoxSelector, el => el.click());
+    try {
+      await page.$eval(vsbSelectors.removeBox1, el => el.click());
+    } catch (error) {
+      await page.$eval(vsbSelectors.removeBox2, el => el.click());
+    }
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 }
