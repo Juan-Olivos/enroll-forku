@@ -33,7 +33,7 @@ require('dotenv').config();
   await page.goto(VSB_url);
 
   // If cookies expired, relogin.
-  if (!page.url().includes("schedulebuilder")) {
+  if (await isLoggedOut(page)) {
 
     await ppyLogin(page);
     try {
@@ -56,6 +56,11 @@ require('dotenv').config();
 
   while (listOfCourses.length !== 0) {
 
+    if (await isLoggedOut(page)) {
+      console.log("logging you back in...");
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      await ppyLogin(page);
+    }
     await updateCourseStates(page, listOfCourses);
 
     const enroll_array = listOfCourses.filter(course => course.state === "Available" && course.cooldown <= 0);
@@ -75,6 +80,7 @@ require('dotenv').config();
 
     await new Promise(resolve => setTimeout(resolve, 60000));
     await page.reload();
+    await new Promise(resolve => setTimeout(resolve, 5000));
 }
 
   console.log("Finished!");
@@ -83,6 +89,17 @@ require('dotenv').config();
 
 
 async function ppyLogin(page) {
+  const currentTime = new Date();
+  const options = {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'America/Toronto'
+};
+
+  console.log(currentTime.toLocaleString('en-US', options));
 
   console.log("PPY: logging in...");
   await page.waitForSelector("#mli");
@@ -107,6 +124,7 @@ async function duoLogin(page) {
   if (duoF) {
       await duoF.waitForSelector('#login-form > div:nth-child(17) > div > label > input[type=checkbox]');
       await duoF.click("#login-form > div:nth-child(17) > div > label > input[type=checkbox]"); // remember 30 days
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await duoF.$eval('#passcode', el => el.click());
       await duoF.$eval('.passcode-input', (el, duocode) => { el.value = duocode }, process.env.DUOCODE);
       await duoF.$eval('#passcode', el => el.click());
@@ -115,7 +133,7 @@ async function duoLogin(page) {
   console.log("sleeping for 20 seconds...");
   await new Promise(resolve => setTimeout(resolve, 20000));
 
-  if(!page.url().includes("schedulebuilder")) {
+  if(await isLoggedOut(page)) {
     throw new UsedDuoCodeException();
   }
 
@@ -172,7 +190,6 @@ async function updateCourseStates(page, listOfCourses) {
     const numberOfMatches = matchingElements.length;
 
     if (numberOfMatches > 1) {
-      console.log("2 matches! Extracting right one...");
       const elHandle = await page.waitForSelector("#legend_box > div.course_box.be0 > div > div > div > label:nth-child(2) > div > div.selection_table > table > tbody > tr:nth-child(1) > td:nth-child(2)");
       const text1 = await elHandle.evaluate(el => el.textContent);
 
@@ -185,7 +202,7 @@ async function updateCourseStates(page, listOfCourses) {
     }
 
     course.reformatState();
-    console.log(`${course.courseCode} | ${course.state}`);
+    // console.log(`${course.courseCode} | ${course.state}`);
 
     await page.waitForSelector(vsbSelectors.courses);
     await page.$eval(vsbSelectors.courses, el => el.click());
@@ -209,7 +226,7 @@ const remSelectors = {
 };
 
 async function enroll(browser, listOfCourses, enroll_array) {
-  const page = browser.pages()[2] ? browser.pages()[2]: await createNewPage(browser);
+  const page = await createNewPage(browser);
 
   for (let i = 0; i < enroll_array.length; i++) {
     const course = enroll_array[i];
@@ -252,8 +269,8 @@ async function enroll(browser, listOfCourses, enroll_array) {
       } 
       else if (reason === 'The spaces in this course are reserved. Please contact the department for further information on receiving permission to add the course. To view the department contact  directory, please click on https://registrar.yorku.ca/enrol/course-contacts.') {
         course.state = "Reserved";
-        course.cooldown = 180;
-        console.log(`${courseName}(${course.courseCode}) is reserved. Re-adding to queue with 3 hour cooldown.`);
+        course.cooldown = 240;
+        console.log(`${courseName}(${course.courseCode}) is reserved. Re-adding to queue with 2 hour cooldown.`);
       } 
       else if (reason === 'You are currently enrolled in this course. Please recheck your enrolment information and try another option.') {
         console.log(`${courseName}(${course.courseCode}) has already been added. Removing from queue.`);
@@ -277,6 +294,7 @@ async function enroll(browser, listOfCourses, enroll_array) {
     }
     await new Promise(resolve => setTimeout(resolve, 5000));
   }
+  await page.close();
   return listOfCourses;
 }
 
@@ -301,4 +319,9 @@ function decrementCooldowns(listOfCourses) {
       course.cooldown--;
     }
   }
+}
+
+async function isLoggedOut(page) {
+  const url = await page.url();
+  return url.includes("passportyork");
 }
