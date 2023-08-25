@@ -24,13 +24,13 @@ async function updateCourseStates(page, listOfCourses) {
 
       await page.waitForSelector(vsbSelectors.searchbar);
       await page.$eval(vsbSelectors.searchbar, el => el.value = '');
-      await page.type(vsbSelectors.searchbar, course.courseCode);
+      await page.type(vsbSelectors.searchbar, course.catalogCode);
 
       await page.waitForSelector(vsbSelectors.addCourseButton);
       await page.$eval(vsbSelectors.addCourseButton, el => el.click());
 
-      // If a courseCode ends with 1, it is a non-lab/tutorial course.
-      const seats_selector = course.courseCode.charAt(course.courseCode.length - 1) === '1'
+      // If a catalogCode ends with 1, it is a non-lab/tutorial course.
+      const seats_selector = course.catalogCode.charAt(course.catalogCode.length - 1) === '1'
         ? vsbSelectors.seatsTerm
         : vsbSelectors.seatsTutLab;
 
@@ -39,11 +39,11 @@ async function updateCourseStates(page, listOfCourses) {
       const matchingElements = await page.$$(seats_selector);
       const numberOfMatches = matchingElements.length;
 
-      // Search for the element with matching courseCode. Only this one has accurate 'Seats: Available/Full'.
+      // Search for the element with matching catalogCode. Only this one has accurate 'Seats: Available/Full'.
       for (let i = 0; i < numberOfMatches; i++) {
         const text = await matchingElements[i].evaluate(el => el.textContent);
 
-        if (text.includes(course.courseCode)) {
+        if (text.includes(course.catalogCode)) {
           // console.log(text);
           course.state = text;
           break;
@@ -51,7 +51,7 @@ async function updateCourseStates(page, listOfCourses) {
       }
 
       course.reformatState();
-      // console.log(`${course.courseCode} | ${course.state}`);
+      // console.log(`${course.catalogCode} | ${course.state}`);
 
       await page.waitForSelector(vsbSelectors.courses);
       await page.$eval(vsbSelectors.courses, el => el.click());

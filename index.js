@@ -1,13 +1,13 @@
 const puppeteer = require("puppeteer");
 const Course = require("./modules/course");
 const readline = require("readline");
-const fs = require("fs");
 const { ppyLogin, duoLogin } = require("./modules/login");
 const { enroll } = require("./modules/rem");
 const { updateCourseStates } = require("./modules/vsb");
 require("dotenv").config();
 
 (async () => {
+  // Prompt user for course catalog codes
   let listOfCourses = await promptCourses();
 
   const browser = await puppeteer.launch({
@@ -29,15 +29,18 @@ require("dotenv").config();
   await page.goto(VSB_url);
 
   try {
+    // Log in to Passport York and Duo Security
     await ppyLogin(page);
     await duoLogin(page);
   }
   catch (error) {
-    console.log(error);
+    console.log("Login error:", error);
     await browser.close();
     return;
   }
 
+  // Continously check if course seats are Full or Available, and enroll in Available courses.
+  // To prevent enrollment spam, Reserved courses are given a 3 hour cooldown.
   while (listOfCourses.length !== 0) {
 
     listOfCourses = await updateCourseStates(page, listOfCourses);
@@ -80,8 +83,8 @@ async function promptCourses() {
       "Please enter the course catalog codes separated by a space:\n",
       (input) => {
         rl.close();
-        const courseCodes = input.trim().split(" ");
-        const courses = courseCodes.map((code) => new Course(code));
+        const catalogCode = input.trim().split(" ");
+        const courses = catalogCode.map((code) => new Course(code));
         resolve(courses);
       }
     );

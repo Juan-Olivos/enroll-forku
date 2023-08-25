@@ -17,12 +17,12 @@ async function enroll(browser, listOfCourses, enroll_array) {
 
   for (let i = 0; i < enroll_array.length; i++) {
     const course = enroll_array[i];
-    console.log(`Attempting to enroll ${course.courseCode}. Please wait...`);
+    console.log(`Attempting to enroll ${course.catalogCode}. Please wait...`);
     await page.waitForSelector(remSelectors.addCourse);
     await page.click(remSelectors.addCourse);
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
-    await page.type(remSelectors.catalogueInput, course.courseCode);
+    await page.type(remSelectors.catalogueInput, course.catalogCode);
     await page.click(remSelectors.catalogueSubmit);
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
@@ -44,32 +44,32 @@ async function enroll(browser, listOfCourses, enroll_array) {
     result = result.trim();
 
     if (result === "The course has been  successfully added.") {
-      console.log(`${courseName}(${course.courseCode}) has been successfully added.`);
-      listOfCourses = listOfCourses.filter((c) => c.courseCode !== course.courseCode);
+      console.log(`${courseName}(${course.catalogCode}) has been successfully added.`);
+      listOfCourses = listOfCourses.filter((c) => c.catalogCode !== course.catalogCode);
     } else {
       const reasonHandle = await page.waitForSelector(remSelectors.reason);
       let reason = await reasonHandle.evaluate((el) => el.textContent);
       reason = reason.trim();
 
       if (reason.includes("The course you are trying to add is full.")) {
-        console.log(`${courseName}(${course.courseCode}) is full. Re-adding to queue.`);
+        console.log(`${courseName}(${course.catalogCode}) is full. Re-adding to queue.`);
         course.state = "Full";
 
       } else if (reason.includes("The spaces in this course are reserved.")) {
         course.state = "Reserved";
         course.applyEnrollmentCooldown();
-        console.log(`${courseName}(${course.courseCode}) is reserved. Re-adding to queue with 2 hour cooldown.`);
+        console.log(`${courseName}(${course.catalogCode}) is reserved. Re-adding to queue with 3 hour cooldown.`);
 
       } else if (reason.includes("You are currently enrolled in this course.")) {
-        console.log(`${courseName}(${course.courseCode}) has already been added. Removing from queue.`);
-        listOfCourses = listOfCourses.filter((c) => c.courseCode !== course.courseCode);
+        console.log(`${courseName}(${course.catalogCode}) has already been added. Removing from queue.`);
+        listOfCourses = listOfCourses.filter((c) => c.catalogCode !== course.catalogCode);
 
       } else if (reason.includes("this course was not added because allowable credits")) {
-        console.log(`${courseName}(${course.courseCode}) has NOT been added because you are full on allowable credits for this session.`);
+        console.log(`${courseName}(${course.catalogCode}) has NOT been added because you are full on allowable credits for this session.`);
         return -1;
 
       } else {
-        console.log(`Failed to enroll ${courseName}(${course.courseCode}) due to unknown reason of:\n${reason}`);
+        console.log(`Failed to enroll ${courseName}(${course.catalogCode}) due to unknown reason of:\n${reason}`);
       }
     }
 

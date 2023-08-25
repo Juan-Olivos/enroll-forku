@@ -1,6 +1,6 @@
 class Course {
-  constructor(courseCode) {
-    this.courseCode = courseCode;
+  constructor(catalogCode) {
+    this.catalogCode = catalogCode;
     this.cooldown = 0;
     this.state = "";
   }

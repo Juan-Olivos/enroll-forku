@@ -34,7 +34,6 @@ async function duoLogin(page) {
   console.log("Signing into duo...");
   await new Promise(resolve => setTimeout(resolve, 5000));
   const frames = page.frames();
-  console.log(frames);
   const duoF = frames[1];
 
   await duoF.waitForSelector('#login-form > div:nth-child(17) > div > label > input[type=checkbox]');
