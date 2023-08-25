@@ -27,25 +27,29 @@ async function ppyLogin(page) {
   await page.waitForSelector(button);
   await page.click(button);
 
-  console.log("sleeping for 10 seconds...");
-  await new Promise(resolve => setTimeout(resolve, 10000));
-
   console.log("done with PPY login");
 }
 
 async function duoLogin(page) {
   console.log("Signing into duo...");
-
+  await new Promise(resolve => setTimeout(resolve, 5000));
   const frames = page.frames();
+  console.log(frames);
   const duoF = frames[1];
-  if (duoF) {
-    await duoF.waitForSelector('#login-form > div:nth-child(17) > div > label > input[type=checkbox]');
-    await duoF.click("#login-form > div:nth-child(17) > div > label > input[type=checkbox]"); // remember 30 days
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    await duoF.$eval('#passcode', el => el.click());
-    await duoF.$eval('.passcode-input', (el, duocode) => { el.value = duocode }, process.env.DUOCODE);
-    await duoF.$eval('#passcode', el => el.click());
-  }
+
+  await duoF.waitForSelector('#login-form > div:nth-child(17) > div > label > input[type=checkbox]');
+  await duoF.click("#login-form > div:nth-child(17) > div > label > input[type=checkbox]"); // remember 30 days
+
+  // await useDuoCode(page, duoF);
+  await sendPush(duoF);
+
+  console.log("done with DUO login");
+}
+
+async function useDuoCode(page, duoF) {
+  await duoF.$eval('#passcode', el => el.click());
+  await duoF.$eval('.passcode-input', (el, duocode) => { el.value = duocode }, process.env.DUOCODE);
+  await duoF.$eval('#passcode', el => el.click());
 
   console.log("sleeping for 20 seconds...");
   await new Promise(resolve => setTimeout(resolve, 20000));
@@ -53,8 +57,13 @@ async function duoLogin(page) {
   if (await isLoggedOut(page)) {
     throw new UsedDuoCodeException();
   }
+}
 
-  console.log("done with DUO login");
+async function sendPush(duoF) {
+  await duoF.$eval(`#auth_methods > fieldset > div.row-label.push-label > button`, el => el.click());
+
+  console.log("sleeping for 30 seconds...");
+  await new Promise(resolve => setTimeout(resolve, 30000));
 }
 
 module.exports = {

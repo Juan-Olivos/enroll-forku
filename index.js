@@ -2,7 +2,7 @@ const puppeteer = require("puppeteer");
 const Course = require("./modules/course");
 const readline = require("readline");
 const fs = require("fs");
-const { isLoggedOut, ppyLogin, duoLogin } = require("./modules/login");
+const { ppyLogin, duoLogin } = require("./modules/login");
 const { enroll } = require("./modules/rem");
 const { updateCourseStates } = require("./modules/vsb");
 require("dotenv").config();
@@ -26,43 +26,20 @@ require("dotenv").config();
   const VSB_url =
     "https://schedulebuilder.yorku.ca/vsb/criteria.jsp?access=0&lang=en&tip=1&page=results&scratch=0&term=2023102119&sort=none&filters=iiiiiiii&bbs=&ds=&cams=0_1_2_3_4_5_6_7_8&locs=any";
 
-  const cookiesFilePath = "./cookies.json";
-  if (fs.existsSync(cookiesFilePath)) {
-    const cookies = require(cookiesFilePath);
-    // Load page with old cookies.
-    await page.setCookie(...cookies);
-  }
-
   await page.goto(VSB_url);
 
-  // If cookies expired, relogin.
-  if (await isLoggedOut(page)) {
+  try {
     await ppyLogin(page);
-    try {
-      await duoLogin(page);
-    } catch (error) {
-      console.log(error);
-      await browser.close();
-      return;
-    }
-
-    const currentCookies = await page.cookies();
-
-    // Save cookies
-    fs.writeFileSync(cookiesFilePath, JSON.stringify(currentCookies));
-  } else {
-    console.log("sleeping for 5 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await duoLogin(page);
+  }
+  catch (error) {
+    console.log(error);
+    await browser.close();
+    return;
   }
 
   while (listOfCourses.length !== 0) {
 
-    if (await isLoggedOut(page)) {
-      console.log("logging you back in...");
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      await ppyLogin(page);
-    }
-    
     listOfCourses = await updateCourseStates(page, listOfCourses);
 
     const enroll_array = listOfCourses.filter(
@@ -77,6 +54,7 @@ require("dotenv").config();
 
     if (listOfCourses === -1) {
       console.log("Too many credits, ending execution.");
+      browser.close();
       return;
     }
 
@@ -84,7 +62,6 @@ require("dotenv").config();
 
     await new Promise((resolve) => setTimeout(resolve, 60000));
     await page.reload();
-    await new Promise((resolve) => setTimeout(resolve, 5000));
   }
 
   console.log("Finished!");
