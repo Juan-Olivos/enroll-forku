@@ -57,7 +57,7 @@ require("dotenv").config();
 
     if (listOfCourses === -1) {
       console.log("Too many credits, ending execution.");
-      browser.close();
+      await browser.close();
       return;
     }
 

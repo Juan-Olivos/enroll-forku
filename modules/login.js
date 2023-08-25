@@ -32,7 +32,7 @@ async function ppyLogin(page) {
 
 async function duoLogin(page) {
   console.log("Signing into duo...");
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise(resolve => setTimeout(resolve, 15000));
   const frames = page.frames();
   const duoF = frames[1];
 

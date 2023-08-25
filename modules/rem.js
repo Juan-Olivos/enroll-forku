@@ -1,15 +1,15 @@
 const remSelectors = {
-  addCourse: 'input[name="5.1.27.1.23"]',
-  catalogueInput: 'input[name="5.1.27.7.7"]',
-  catalogueSubmit: 'input[name="5.1.27.7.9"]',
-  confirmButton: ['input[name="5.1.27.15.17"]', 'input[name="5.1.27.11.11"]'],
+  addACourse: 'input[title="Add a Course"]',
+  catalogueInput: 'input[type="text"]',
+  catalogueAdd: 'input[value="Add Course"]',
+  yesButton: 'input[value="Yes"]',
   courseName:
     "body > form > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2) > table > tbody > tr > td > table:nth-child(4) > tbody > tr:nth-child(4) > td:nth-child(2) > span",
   result:
-    "body > form > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2) > table > tbody > tr > td > table:nth-child(4) > tbody > tr:nth-child(1) > td:nth-child(2) > span > font > b",
+    "body > form > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2) > table > tbody > tr > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > span > font > b",
   reason:
     "body > form > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2) > table > tbody > tr > td > table:nth-child(4) > tbody > tr:nth-child(2) > td:nth-child(2) > span > font > b",
-  continueButton: ['input[name="5.1.27.27.11"]', 'input[name="5.1.27.19.9"]'],
+  continueButton: `input[value="Continue"]`
 };
 
 async function enroll(browser, listOfCourses, enroll_array) {
@@ -18,32 +18,28 @@ async function enroll(browser, listOfCourses, enroll_array) {
   for (let i = 0; i < enroll_array.length; i++) {
     const course = enroll_array[i];
     console.log(`Attempting to enroll ${course.catalogCode}. Please wait...`);
-    await page.waitForSelector(remSelectors.addCourse);
-    await page.click(remSelectors.addCourse);
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await page.waitForSelector(remSelectors.addACourse);
+    await page.click(remSelectors.addACourse);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     await page.type(remSelectors.catalogueInput, course.catalogCode);
-    await page.click(remSelectors.catalogueSubmit);
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await page.click(remSelectors.catalogueAdd);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const courseNameHandle = await page.waitForSelector(remSelectors.courseName);
 
     let courseName = await courseNameHandle.evaluate((el) => el.textContent);
 
-    try {
-      await page.waitForSelector(remSelectors.confirmButton[0], { timeout: 5000, });
-      await page.click(remSelectors.confirmButton[0]);
-    } catch (error) {
-      await page.waitForSelector(remSelectors.confirmButton[1]);
-      await page.click(remSelectors.confirmButton[1]);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await page.waitForSelector(remSelectors.yesButton);
+    await page.click(remSelectors.yesButton);
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const resultHandle = await page.waitForSelector(remSelectors.result);
     let result = await resultHandle.evaluate((el) => el.textContent);
     result = result.trim();
 
-    if (result === "The course has been  successfully added.") {
+    if (result.includes("successfully added")) {
       console.log(`${courseName}(${course.catalogCode}) has been successfully added.`);
       listOfCourses = listOfCourses.filter((c) => c.catalogCode !== course.catalogCode);
     } else {
@@ -73,13 +69,9 @@ async function enroll(browser, listOfCourses, enroll_array) {
       }
     }
 
-    try {
-      await page.waitForSelector(remSelectors.continueButton[0], { timeout: 5000, });
-      await page.click(remSelectors.continueButton[0]);
-    } catch (error) {
-      await page.waitForSelector(remSelectors.continueButton[1]);
-      await page.click(remSelectors.continueButton[1]);
-    }
+    await page.waitForSelector(remSelectors.continueButton, { timeout: 5000, });
+    await page.click(remSelectors.continueButton);
+
     await new Promise((resolve) => setTimeout(resolve, 5000));
   }
   await page.close();
