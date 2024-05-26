@@ -20,7 +20,7 @@ async function updateCourseStates(page, listOfCourses) {
       const course = listOfCourses[i];
 
       await page.waitForSelector(vsbSelectors.courses, { timeout: 90000 });
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       await page.$eval(vsbSelectors.courses, el => el.click());
 
       await page.waitForSelector(vsbSelectors.searchbar);
