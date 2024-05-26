@@ -16,7 +16,7 @@ class Course {
   }
 
   applyEnrollmentCooldown() {
-    this.cooldown = 180;
+    this.cooldown = 36;
   }
 }
 

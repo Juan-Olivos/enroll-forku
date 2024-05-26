@@ -19,7 +19,8 @@ async function updateCourseStates(page, listOfCourses) {
     for (let i = 0; i < listOfCourses.length; i++) {
       const course = listOfCourses[i];
 
-      await page.waitForSelector(vsbSelectors.courses, { timeout: 15000 });
+      await page.waitForSelector(vsbSelectors.courses, { timeout: 90000 });
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       await page.$eval(vsbSelectors.courses, el => el.click());
 
       await page.waitForSelector(vsbSelectors.searchbar);
@@ -71,7 +72,7 @@ async function updateCourseStates(page, listOfCourses) {
       await ppyLogin(page);
     } else {
       console.log(error);
-      console.log("If it is 12am, then the error due is to scheduled VSB maintenance, please ignore.");
+      console.log("If it is 12am, then the error due is to scheduled VSB maintenance, please try again later.");
     }
   } finally {
     return listOfCourses;

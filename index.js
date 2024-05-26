@@ -22,16 +22,17 @@ require("dotenv").config();
 
   const page = await browser.newPage();
 
-  //FW2023-2024 URL
+  //SU 2024 URL
   const VSB_url =
-    "https://schedulebuilder.yorku.ca/vsb/criteria.jsp?access=0&lang=en&tip=1&page=results&scratch=0&term=2023102119&sort=none&filters=iiiiiiii&bbs=&ds=&cams=0_1_2_3_4_5_6_7_8&locs=any";
+    "https://schedulebuilder.yorku.ca/vsb/criteria.jsp?access=0&lang=en&tip=1&page=results&scratch=0&term=2023115117&sort=none&filters=iiiiiiii&bbs=&ds=&cams=0_1_2_3_4_5_6&locs=any";
 
   await page.goto(VSB_url);
 
   try {
     // Log in to Passport York and Duo Security
     await ppyLogin(page);
-    await duoLogin(page);
+    console.log("Please Two-Factor Authenticate.");
+    // await new Promise((resolve) => setTimeout(resolve, 60000)); // 1 minute  
   }
   catch (error) {
     console.log("Login error:", error);
@@ -63,7 +64,7 @@ require("dotenv").config();
 
     decrementCooldowns(listOfCourses);
 
-    await new Promise((resolve) => setTimeout(resolve, 60000));
+    await new Promise((resolve) => setTimeout(resolve, 300000)); // 5 minutes
     await page.reload();
   }
 
