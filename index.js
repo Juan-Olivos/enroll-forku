@@ -31,7 +31,7 @@ require("dotenv").config();
   try {
     // Log in to Passport York and Duo Security
     await ppyLogin(page);
-    console.log("Please Two-Factor Authenticate.");
+    console.log("Please Two-Factor Authenticate within 90 seconds.");
     // await new Promise((resolve) => setTimeout(resolve, 60000)); // 1 minute  
   }
   catch (error) {
