@@ -1,6 +1,0 @@
-.env
-*.png
-test.js
-.vscode
-node_modules
-.gitignore
