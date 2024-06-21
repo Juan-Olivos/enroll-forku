@@ -1,6 +1,6 @@
 # enroll-forku
 
-A tool to automate checking course availability and enrollment. Now working for SU2024!
+A tool to automate checking course availability and enrollment. Now working for Fall/Winter 2024-2025!
 
 ## How It Works
 
