@@ -1,13 +1,21 @@
 const puppeteer = require("puppeteer");
+const chalk = require('chalk');
 const Course = require("./modules/course");
 const readline = require("readline");
 const { ppyLogin, duoLogin } = require("./modules/login");
 const { enroll } = require("./modules/rem");
 const { updateCourseStates } = require("./modules/vsb");
 const { sendGmailNotification } = require("./modules/notifications");
+const { checkEnvVariables } = require("./modules/configCheck");
 require("dotenv").config();
 
 (async () => {
+  console.log(chalk.blue('=== York University Course Enrollment Bot ===\n'));
+
+  console.log('Initializing...\n');
+
+  checkEnvVariables();
+
   // Prompt user for course catalog codes
   let listOfCourses = await promptCourses();
 
@@ -23,7 +31,7 @@ require("dotenv").config();
 
   const page = await browser.newPage();
 
-  //SU 2024 URL
+  //FW 2024-2025 URL
   const VSB_url =
     "https://schedulebuilder.yorku.ca/vsb/criteria.jsp?access=0&lang=en&tip=1&page=results&scratch=0&term=2024102119&sort=none&filters=iiiiiiii&bbs=&ds=&cams=0_1_2_3_4_5_6&locs=any";
 
@@ -33,7 +41,6 @@ require("dotenv").config();
     // Log in to Passport York and Duo Security
     await ppyLogin(page);
     console.log("Please Two-Factor Authenticate within 90 seconds.");
-    // await new Promise((resolve) => setTimeout(resolve, 60000)); // 1 minute  
   }
   catch (error) {
     console.log("Login error:", error);
@@ -54,20 +61,20 @@ require("dotenv").config();
     if (enroll_array.length != 0) {
       const previousLength = listOfCourses.length;
       const status = await enroll(browser, listOfCourses, enroll_array);
-      
+
       if (status === 1) {
         console.log("Too many credits, ending execution.");
         await browser.close();
         return;
       }
-      
+
       // Check if any courses were successfully enrolled
       if (listOfCourses.length < previousLength) {
-        
+
         const enrolledCourses = enroll_array.filter(course => !listOfCourses.includes(course));
         await sendGmailNotification(enrolledCourses);
       }
-      
+
       if (listOfCourses.length === 0) {
         break;
       }
