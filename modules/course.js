@@ -3,6 +3,7 @@ class Course {
     this.catalogCode = catalogCode;
     this.cooldown = 0;
     this.state = "";
+    this.name = "";
   }
 
   reformatState() {
@@ -17,6 +18,10 @@ class Course {
 
   applyEnrollmentCooldown() {
     this.cooldown = 36;
+  }
+
+  getFullDescription() {
+    return `${this.name} (${this.catalogCode})`;
   }
 }
 

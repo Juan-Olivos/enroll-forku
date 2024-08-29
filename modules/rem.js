@@ -41,7 +41,8 @@ async function enroll(browser, listOfCourses, enroll_array) {
 
     if (result.includes("successfully added")) {
       console.log(`${courseName}(${course.catalogCode}) has been successfully added.`);
-      listOfCourses = listOfCourses.filter((c) => c.catalogCode !== course.catalogCode);
+      enroll_array[i].name = courseName;
+      listOfCourses.splice(0, listOfCourses.length, ...listOfCourses.filter((c) => c.catalogCode !== course.catalogCode));
     } else {
       const reasonHandle = await page.waitForSelector(remSelectors.reason);
       let reason = await reasonHandle.evaluate((el) => el.textContent);
@@ -58,11 +59,11 @@ async function enroll(browser, listOfCourses, enroll_array) {
 
       } else if (reason.includes("You are currently enrolled in this course.")) {
         console.log(`${courseName}(${course.catalogCode}) has already been added. Removing from queue.`);
-        listOfCourses = listOfCourses.filter((c) => c.catalogCode !== course.catalogCode);
+        listOfCourses.splice(0, listOfCourses.length, ...listOfCourses.filter((c) => c.catalogCode !== course.catalogCode));
 
       } else if (reason.includes("this course was not added because allowable credits")) {
         console.log(`${courseName}(${course.catalogCode}) has NOT been added because you are full on allowable credits for this session.`);
-        return -1;
+        return 1;
 
       } else {
         console.log(`Failed to enroll ${courseName}(${course.catalogCode}) due to unknown reason of:\n${reason}`);
@@ -75,7 +76,7 @@ async function enroll(browser, listOfCourses, enroll_array) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
   }
   await page.close();
-  return listOfCourses;
+  return 0;
 }
 
 async function createNewPage(browser) {

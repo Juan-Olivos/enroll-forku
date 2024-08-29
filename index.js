@@ -4,6 +4,7 @@ const readline = require("readline");
 const { ppyLogin, duoLogin } = require("./modules/login");
 const { enroll } = require("./modules/rem");
 const { updateCourseStates } = require("./modules/vsb");
+const { sendGmailNotification } = require("./modules/notifications");
 require("dotenv").config();
 
 (async () => {
@@ -51,16 +52,29 @@ require("dotenv").config();
     );
 
     if (enroll_array.length != 0) {
-      listOfCourses = await enroll(browser, listOfCourses, enroll_array);
+      const previousLength = listOfCourses.length;
+      const status = await enroll(browser, listOfCourses, enroll_array);
+      
+      if (status === 1) {
+        console.log("Too many credits, ending execution.");
+        await browser.close();
+        return;
+      }
+      
+      // Check if any courses were successfully enrolled
+      if (listOfCourses.length < previousLength) {
+        
+        const enrolledCourses = enroll_array.filter(course => !listOfCourses.includes(course));
+        await sendGmailNotification(enrolledCourses);
+      }
+      
+      if (listOfCourses.length === 0) {
+        break;
+      }
     } else {
       console.log("All courses are full or on cooldown.");
     }
 
-    if (listOfCourses === -1) {
-      console.log("Too many credits, ending execution.");
-      await browser.close();
-      return;
-    }
 
     decrementCooldowns(listOfCourses);
 
