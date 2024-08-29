@@ -17,6 +17,7 @@ This tool automates the process of checking course availability and enrolling in
 Before you begin, ensure you have met the following requirements:
 - You have installed [Node.js](https://nodejs.org/) (version 18.17.1 or higher)
 - You have a terminal or command line interface
+- You have installed [Git](https://git-scm.com/downloads)
 
 ## Installation
 
@@ -38,6 +39,15 @@ To install the dependencies, follow these steps:
 ## Configuration
 
 1. Create a `.env` file in the root directory of the project.
+
+    ### On Windows
+
+    Run the following command in PowerShell at the project directory:
+
+    ```cmd
+    New-Item -Path . -Name ".env" -ItemType "File" -Force
+    ```
+    
 2. Add the following environment variables to the `.env` file:
 
     ```plaintext
