@@ -44,7 +44,23 @@ To install the dependencies, follow these steps:
     PPY_USERNAME=your_username
     PPY_PASSWORD=your_password
     ```
-You will need to Two-factor authenticate for the initial login.
+3. (Optional) To enable email notifications upon successful enrollment, add these additional variables:
+
+    ```plaintext
+    EXTERNAL_GMAIL=your_gmail_address
+    GMAIL_APP_PASSWORD=your_app_password
+    ```
+
+   To obtain a Gmail App Password:
+   - Go to your Google Account settings (https://myaccount.google.com/)
+   - Select "Security" on the left navigation panel
+   - Enable 2-Step Verification if it's not already enabled
+   - Go back to Security and look up "App passwords" on the search bar at the top of the page
+   - Give your app password a name
+   - Click "Create"
+   - Use the 16-character password that Google generates as your GMAIL_APP_PASSWORD
+
+If email notifications are not configured, the script will still run without sending notifications.
 
 ## Usage
 
@@ -60,4 +76,4 @@ Please enter the course catalog codes separated by a space: ABC123 XYZ456
 ```
 Replace ABC123 XYZ456 with the actual course catalog codes you want to enroll in.
 
-
+You will need to manually Two-factor authenticate for the initial login.
