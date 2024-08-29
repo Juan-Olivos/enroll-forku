@@ -12,9 +12,13 @@ function checkEnvVariables() {
 
   // Check email notification status and validate values
   if (process.env.EXTERNAL_GMAIL && process.env.GMAIL_APP_PASSWORD) {
+    
+    // Remove spaces from GMAIL_APP_PASSWORD
+    process.env.GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD.replace(/\s/g, '');
+
     if (!(process.env.EXTERNAL_GMAIL.includes('@gmail.com') || process.env.EXTERNAL_GMAIL.includes('@googlemail.com'))) {
       console.log(chalk.red('✗ Invalid email address. Please set a valid gmail address in EXTERNAL_GMAIL in your .env file.'));
-    } else if (process.env.GMAIL_APP_PASSWORD.replace(/\s/g, '').length !== 16) {
+    } else if (process.env.GMAIL_APP_PASSWORD.length !== 16) {
       console.log(chalk.red('✗ Invalid Gmail App Password. Please set a valid app password in GMAIL_APP_PASSWORD in your .env file.'));
     } else {
       console.log(chalk.green('✓ Email notifications are enabled.'));
