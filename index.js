@@ -2,9 +2,8 @@ const puppeteer = require("puppeteer");
 const chalk = require('chalk');
 const Course = require("./modules/course");
 const readline = require("readline");
-const { ppyLogin, duoLogin } = require("./modules/login");
 const { enroll } = require("./modules/rem");
-const { updateCourseStates } = require("./modules/vsb");
+const { updateCourseStates, addNameToCourses } = require("./modules/vsb");
 const { sendGmailNotification } = require("./modules/notifications");
 const { checkEnvVariables } = require("./modules/configCheck");
 require("dotenv").config();
@@ -31,22 +30,7 @@ require("dotenv").config();
 
   const page = await browser.newPage();
 
-  //FW 2024-2025 URL
-  const VSB_url =
-    "https://schedulebuilder.yorku.ca/vsb/criteria.jsp?access=0&lang=en&tip=1&page=results&scratch=0&term=2024102119&sort=none&filters=iiiiiiii&bbs=&ds=&cams=0_1_2_3_4_5_6&locs=any";
-
-  await page.goto(VSB_url);
-
-  try {
-    // Log in to Passport York and Duo Security
-    await ppyLogin(page);
-    console.log("Please Two-Factor Authenticate within 90 seconds.");
-  }
-  catch (error) {
-    console.log("Login error:", error);
-    await browser.close();
-    return;
-  }
+  await addNameToCourses(page, listOfCourses);
 
   // Continously check if course seats are Full or Available, and enroll in Available courses.
   // To prevent enrollment spam, Reserved courses are given a 3 hour cooldown.
@@ -79,7 +63,16 @@ require("dotenv").config();
         break;
       }
     } else {
-      console.log("All courses are full or on cooldown.");
+      const currentTime = new Date();
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Toronto'
+      };
+      console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
     }
 
 
