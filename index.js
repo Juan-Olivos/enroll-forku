@@ -72,19 +72,10 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
           break;
         }
       } else {
-        const currentTime = new Date();
-        const options = {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'America/Toronto'
-        };
-        console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
+        logNoCoursesReady();
       }
 
-      decrementCooldowns(listOfCourses, WAIT_INTERVAL);
+      decrementReservedCooldowns(listOfCourses, WAIT_INTERVAL);
 
       await new Promise((resolve) => setTimeout(resolve, WAIT_INTERVAL)); // 5 minutes
       await page.reload();
@@ -99,7 +90,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
           console.log('Max retry limit reached. Terminating the bot.');
           break;
         }
-        decrementCooldowns(listOfCourses, MAINTENANCE_WAIT_TIME);
+        decrementReservedCooldowns(listOfCourses, MAINTENANCE_WAIT_TIME);
         console.log('Potential server maintenance detected, waiting 15 minutes...');
         await new Promise((resolve) => setTimeout(resolve, MAINTENANCE_WAIT_TIME));
         retryCount++;
@@ -135,7 +126,7 @@ async function promptCourses() {
   });
 }
 
-function decrementCooldowns(listOfCourses, waitTime) {
+function decrementReservedCooldowns(listOfCourses, waitTime) {
   waitTime /= 1000; // Convert to seconds
   waitTime /= 60; // Convert to minutes
 
@@ -144,4 +135,17 @@ function decrementCooldowns(listOfCourses, waitTime) {
       course.cooldown -= waitTime;
     }
   }
+}
+
+function logNoCoursesReady() {
+  const currentTime = new Date();
+  const options = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Toronto'
+  };
+  console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
 }
