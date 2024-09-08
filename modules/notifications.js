@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-async function sendGmailNotification(enrolledCourses) {
+async function sendGmailNotification(subject, body) {
 
   if (!process.env.EXTERNAL_GMAIL || !process.env.GMAIL_APP_PASSWORD) {
     return;
@@ -14,13 +14,13 @@ async function sendGmailNotification(enrolledCourses) {
     }
   });
 
-  const courseDescriptions = enrolledCourses.map(course => course.getFullDescription()).join('\n');
+
 
   const mailOptions = {
     from: process.env.EXTERNAL_GMAIL,
     to: process.env.EXTERNAL_GMAIL,
-    subject: 'Course Enrollment Success',
-    text: `Successfully enrolled in ${enrolledCourses.length} course(s):\n\n${courseDescriptions}`
+    subject: subject,
+    text: body
   };
 
   transporter.sendMail(mailOptions, (error, info) => {

@@ -65,7 +65,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
         if (listOfCourses.length < previousLength) {
 
           const enrolledCourses = enroll_array.filter(course => !listOfCourses.includes(course));
-          await sendGmailNotification(enrolledCourses);
+          sendSuccessfulEnrolmentGmail(enrolledCourses);
         }
 
         if (listOfCourses.length === 0) {
@@ -88,6 +88,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
         // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
         if (retryCount >= maxRetries - 1) {
           console.log('Max retry limit reached. Terminating the bot.');
+          sendErrorGmail(error.message);
           break;
         }
         decrementReservedCooldowns(listOfCourses, MAINTENANCE_WAIT_TIME);
@@ -97,6 +98,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
 
       } else {
         console.log('Unknown error occurred, terminating the bot.');
+        sendErrorGmail(error.message);
         break;
       }
     }
@@ -148,4 +150,17 @@ function logNoCoursesReady() {
     timeZone: 'America/Toronto'
   };
   console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
+}
+
+function sendSuccessfulEnrolmentGmail(enrolledCourses) {
+  const courseDescriptions = enrolledCourses.map(course => course.getFullDescription()).join('\n');
+  const subject = 'Course Enrollment Success';
+  const body = `Successfully enrolled in ${enrolledCourses.length} course(s):\n\n${courseDescriptions}`;
+  sendGmailNotification(subject, body);
+}
+
+function sendErrorGmail(error) {
+  const subject = 'Course Enrollment Error';
+  const body = `An error occurred during course enrollment: ${error}`;
+  sendGmailNotification(subject, body);
 }
