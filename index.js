@@ -149,7 +149,7 @@ function logNoCoursesReady() {
     minute: '2-digit',
     timeZone: 'America/Toronto'
   };
-  console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
+  console.log(`All courses are full or reserved and on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
 }
 
 function sendSuccessfulEnrolmentGmail(enrolledCourses) {

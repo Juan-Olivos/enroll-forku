@@ -85,7 +85,6 @@ async function updateCourseStates(page, listOfCourses) {
       
       if (openSeats === 0 || openSeats === -1) {
         course.state = "Full";
-        console.log(`Course ${course.name} is full.`);   
       } else {
         course.state = "Available";
         console.log(`Course ${course.name} is available with ${openSeats} seats.`);
@@ -105,9 +104,7 @@ function parseXMLForOpenSeats(xmlText, targetKey) {
   const nodes = xpath.select(xpathSelector, xmlDoc);
   
   if (nodes.length > 0) {
-    // If found, return the 'os' attribute value
-    console.log(`Number of blocks found with same key(${targetKey}) : ${nodes.length}`);
-    
+    // If found, return the 'os' attribute value    
     return parseInt(nodes[0].getAttribute('os'), 10);
   } else {
     console.log(`Block with key '${targetKey}' not found`);

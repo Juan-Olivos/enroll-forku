@@ -27,7 +27,7 @@ async function ppyLogin(page) {
   await page.waitForSelector(button);
   await page.click(button);
 
-  console.log("done with PPY login");
+  console.log("Done with PPY login.");
 }
 
 async function ensureLoggedIn(page) {
@@ -37,11 +37,11 @@ async function ensureLoggedIn(page) {
 }
 
 async function duoLogin(page) {
-  console.log("Signing into duo...");
+  console.log("Signing into duo. You have 90 seconds to authenticate.");
   await page.waitForSelector('#trust-browser-button', { timeout: 90000 });
-  console.log("Found trust browser button");
+  console.log("Successfully authenticated.");
   await page.click('#trust-browser-button');
-  console.log("Clicked trust browser button");
+  console.log("Done with DUO login");
 }
 
 module.exports = {
