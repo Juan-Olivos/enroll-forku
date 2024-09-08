@@ -1,4 +1,5 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require('puppeteer-extra')
+const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 const chalk = require('chalk');
 const Course = require("./modules/course");
 const readline = require("readline");
@@ -8,18 +9,20 @@ const { sendGmailNotification } = require("./modules/notifications");
 const { checkEnvVariables } = require("./modules/configCheck");
 require("dotenv").config();
 
+
 (async () => {
   console.log(chalk.blue('=== York University Course Enrollment Bot ===\n'));
-
+  
   console.log('Initializing...\n');
-
+  
   checkEnvVariables();
-
+  
   // Prompt user for course catalog codes
   let listOfCourses = await promptCourses();
-
+  
+  puppeteer.use(StealthPlugin())
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: "new",
     args: [
       "--disable-web-security",
       "--disable-features=IsolateOrigins,site-per-process",

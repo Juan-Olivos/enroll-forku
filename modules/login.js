@@ -30,43 +30,22 @@ async function ppyLogin(page) {
   console.log("done with PPY login");
 }
 
-async function duoLogin(page) {
-  console.log("Signing into duo...");
-  await new Promise(resolve => setTimeout(resolve, 15000));
-  const frames = page.frames();
-  const duoF = frames[1];
-
-  await duoF.waitForSelector('#login-form > div:nth-child(17) > div > label > input[type=checkbox]');
-  await duoF.click("#login-form > div:nth-child(17) > div > label > input[type=checkbox]"); // remember 30 days
-
-  // await useDuoCode(page, duoF);
-  await sendPush(duoF);
-
-  console.log("done with DUO login");
-}
-
-async function useDuoCode(page, duoF) {
-  await duoF.$eval('#passcode', el => el.click());
-  await duoF.$eval('.passcode-input', (el, duocode) => { el.value = duocode }, process.env.DUOCODE);
-  await duoF.$eval('#passcode', el => el.click());
-
-  console.log("sleeping for 20 seconds...");
-  await new Promise(resolve => setTimeout(resolve, 20000));
-
+async function ensureLoggedIn(page) {
   if (await isLoggedOut(page)) {
-    throw new UsedDuoCodeException();
+    await ppyLogin(page);
   }
 }
 
-async function sendPush(duoF) {
-  await duoF.$eval(`#auth_methods > fieldset > div.row-label.push-label > button`, el => el.click());
-
-  console.log("sleeping for 30 seconds...");
-  await new Promise(resolve => setTimeout(resolve, 30000));
+async function duoLogin(page) {
+  console.log("Signing into duo...");
+  await page.waitForSelector('#trust-browser-button', { timeout: 90000 });
+  console.log("Found trust browser button");
+  await page.click('#trust-browser-button');
+  console.log("Clicked trust browser button");
 }
 
 module.exports = {
-  isLoggedOut,
+  ensureLoggedIn,
   ppyLogin,
   duoLogin
 };
