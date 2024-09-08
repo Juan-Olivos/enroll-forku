@@ -10,6 +10,8 @@ const { sendGmailNotification } = require("./modules/notifications");
 const { checkEnvVariables } = require("./modules/configCheck");
 require("dotenv").config();
 
+const WAIT_INTERVAL = 300000; // 5 minutes
+const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
 
 (async () => {
   console.log(chalk.blue('=== York University Course Enrollment Bot ===\n'));
@@ -81,26 +83,25 @@ require("dotenv").config();
         };
         console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
       }
-      
-      
-      decrementCooldowns(listOfCourses);
-      
-      await new Promise((resolve) => setTimeout(resolve, 300000)); // 5 minutes
+
+      decrementCooldowns(listOfCourses, WAIT_INTERVAL);
+
+      await new Promise((resolve) => setTimeout(resolve, WAIT_INTERVAL)); // 5 minutes
       await page.reload();
       retryCount = 0;
     } catch (error) {
 
       // Handles server maintenance @ 12:00 AM
       if (error instanceof TimeoutError) {
-        
+
         // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
         if (retryCount >= maxRetries - 1) {
           console.log('Max retry limit reached. Terminating the bot.');
           break;
         }
-
+        decrementCooldowns(listOfCourses, MAINTENANCE_WAIT_TIME);
         console.log('Potential server maintenance detected, waiting 15 minutes...');
-        await new Promise((resolve) => setTimeout(resolve, 900000)); // 15 minutes
+        await new Promise((resolve) => setTimeout(resolve, MAINTENANCE_WAIT_TIME));
         retryCount++;
 
       } else {
@@ -134,10 +135,13 @@ async function promptCourses() {
   });
 }
 
-function decrementCooldowns(listOfCourses) {
+function decrementCooldowns(listOfCourses, waitTime) {
+  waitTime /= 1000; // Convert to seconds
+  waitTime /= 60; // Convert to minutes
+
   for (const course of listOfCourses) {
     if (course.cooldown > 0) {
-      course.cooldown--;
+      course.cooldown -= waitTime;
     }
   }
 }

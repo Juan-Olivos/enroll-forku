@@ -17,7 +17,7 @@ class Course {
   }
 
   applyEnrollmentCooldown() {
-    this.cooldown = 36;
+    this.cooldown = 180;
   }
 
   getFullDescription() {
