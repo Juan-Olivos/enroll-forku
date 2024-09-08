@@ -3,6 +3,7 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 const chalk = require('chalk');
 const Course = require("./modules/course");
 const readline = require("readline");
+const { TimeoutError } = require('puppeteer');
 const { enroll } = require("./modules/rem");
 const { updateCourseStates, addNameToCourses } = require("./modules/vsb");
 const { sendGmailNotification } = require("./modules/notifications");
@@ -12,15 +13,15 @@ require("dotenv").config();
 
 (async () => {
   console.log(chalk.blue('=== York University Course Enrollment Bot ===\n'));
-  
+
   console.log('Initializing...\n');
-  
+
   checkEnvVariables();
-  
+
   // Prompt user for course catalog codes
   let listOfCourses = await promptCourses();
-  
-  puppeteer.use(StealthPlugin())
+
+  puppeteer.use(StealthPlugin());
   const browser = await puppeteer.launch({
     headless: "new",
     args: [
@@ -35,54 +36,78 @@ require("dotenv").config();
 
   await addNameToCourses(page, listOfCourses);
 
+  let retryCount = 0;
+  const maxRetries = 3;
+
   // Continously check if course seats are Full or Available, and enroll in Available courses.
   // To prevent enrollment spam, Reserved courses are given a 3 hour cooldown.
   while (listOfCourses.length !== 0) {
+    try {
+      listOfCourses = await updateCourseStates(page, listOfCourses);
 
-    listOfCourses = await updateCourseStates(page, listOfCourses);
+      const enroll_array = listOfCourses.filter(
+        (course) => course.state === "Available" && course.cooldown <= 0
+      );
 
-    const enroll_array = listOfCourses.filter(
-      (course) => course.state === "Available" && course.cooldown <= 0
-    );
+      if (enroll_array.length != 0) {
+        const previousLength = listOfCourses.length;
+        const status = await enroll(browser, listOfCourses, enroll_array);
 
-    if (enroll_array.length != 0) {
-      const previousLength = listOfCourses.length;
-      const status = await enroll(browser, listOfCourses, enroll_array);
+        if (status === 1) {
+          console.log("Too many credits, ending execution.");
+          await browser.close();
+          return;
+        }
 
-      if (status === 1) {
-        console.log("Too many credits, ending execution.");
-        await browser.close();
-        return;
+        // Check if any courses were successfully enrolled
+        if (listOfCourses.length < previousLength) {
+
+          const enrolledCourses = enroll_array.filter(course => !listOfCourses.includes(course));
+          await sendGmailNotification(enrolledCourses);
+        }
+
+        if (listOfCourses.length === 0) {
+          break;
+        }
+      } else {
+        const currentTime = new Date();
+        const options = {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'America/Toronto'
+        };
+        console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
       }
+      
+      
+      decrementCooldowns(listOfCourses);
+      
+      await new Promise((resolve) => setTimeout(resolve, 300000)); // 5 minutes
+      await page.reload();
+      retryCount = 0;
+    } catch (error) {
 
-      // Check if any courses were successfully enrolled
-      if (listOfCourses.length < previousLength) {
+      // Handles server maintenance @ 12:00 AM
+      if (error instanceof TimeoutError) {
+        
+        // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
+        if (retryCount >= maxRetries - 1) {
+          console.log('Max retry limit reached. Terminating the bot.');
+          break;
+        }
 
-        const enrolledCourses = enroll_array.filter(course => !listOfCourses.includes(course));
-        await sendGmailNotification(enrolledCourses);
-      }
+        console.log('Potential server maintenance detected, waiting 15 minutes...');
+        await new Promise((resolve) => setTimeout(resolve, 900000)); // 15 minutes
+        retryCount++;
 
-      if (listOfCourses.length === 0) {
+      } else {
+        console.log('Unknown error occurred, terminating the bot.');
         break;
       }
-    } else {
-      const currentTime = new Date();
-      const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Toronto'
-      };
-      console.log(`All courses are full or on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
     }
-
-
-    decrementCooldowns(listOfCourses);
-
-    await new Promise((resolve) => setTimeout(resolve, 300000)); // 5 minutes
-    await page.reload();
   }
 
   console.log("Finished!");

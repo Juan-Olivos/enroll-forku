@@ -77,13 +77,6 @@ async function updateCourseStates(page, listOfCourses) {
     const pre = document.querySelector('.pretty-print');
     return pre ? pre.textContent : null;
   });
-  
-  // TODO: Check if this url also give message like this.
-  if (xmlText === "System Loading. Try again in 0-3 minutes.") {
-    console.log("Wait 30 minutes due to scheduled maintenance on the server.");
-    await new Promise((resolve) => setTimeout(resolve, 1800000)); // 30 minutes
-    return await updateCourseStates(page, listOfCourses); // Recursive call
-  }
 
   if (xmlText) {
     for (const course of listOfCourses) {
