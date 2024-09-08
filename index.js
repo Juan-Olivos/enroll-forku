@@ -55,8 +55,10 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
         const previousLength = listOfCourses.length;
         const status = await enroll(browser, listOfCourses, enroll_array);
 
+        // Check if the user has reached the maximum allowable credits
         if (status === 1) {
           console.log("Too many credits, ending execution.");
+          sendErrorGmail("Ended execution because you are full on allowable credits for this session. Try dropping another course.");
           await browser.close();
           return;
         }
