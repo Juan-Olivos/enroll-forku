@@ -38,27 +38,19 @@ To install the dependencies, follow these steps:
 
 ## Configuration
 
-1. Create a `.env` file in the root directory of the project.
-
-    ### On Windows
-
-    Run the following command in PowerShell at the project directory:
-
-    ```cmd
-    New-Item -Path . -Name ".env" -ItemType "File" -Force
-    ```
+1. Rename the `.env.example` file to `.env` in the root directory of the project.
     
 2. Add the following environment variables to the `.env` file:
 
     ```plaintext
-    PPY_USERNAME=your_username
-    PPY_PASSWORD=your_password
+    PPY_USERNAME=your-username-here
+    PPY_PASSWORD=your-password-here
     ```
 3. (Optional) To enable email notifications upon successful enrollment, add these additional variables:
 
     ```plaintext
-    EXTERNAL_GMAIL=your_gmail_address
-    GMAIL_APP_PASSWORD=your_app_password
+    EXTERNAL_GMAIL=your-gmail-here
+    GMAIL_APP_PASSWORD=your-app-password
     ```
 
    To obtain a Gmail App Password:
