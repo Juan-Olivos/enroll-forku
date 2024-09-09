@@ -74,6 +74,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
           break;
         }
       } else {
+        logRemainingCourses(listOfCourses);
         logNoCoursesReady();
       }
 
@@ -152,6 +153,11 @@ function logNoCoursesReady() {
     timeZone: 'America/Toronto'
   };
   console.log(`All courses are full or reserved and on cooldown. ${currentTime.toLocaleString('en-US', options)}`);
+}
+
+function logRemainingCourses(listOfCourses) {
+  const remainingCourses = listOfCourses.map(course => course.catalogCode).join(' ');
+  console.log(`Remaining courses: ${remainingCourses}`);
 }
 
 function sendSuccessfulEnrolmentGmail(enrolledCourses) {
