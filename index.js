@@ -92,6 +92,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
         // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
         if (retryCount >= maxRetries - 1) {
           console.log('Max retry limit reached. Terminating the bot.');
+          console.log(error.stack);
           await sendErrorGmail(error.message);
           break;
         }
@@ -102,6 +103,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
 
       } else {
         console.log('Unknown error occurred, terminating the bot.');
+        console.log(error.stack);
         await sendErrorGmail(error.message);
         break;
       }
