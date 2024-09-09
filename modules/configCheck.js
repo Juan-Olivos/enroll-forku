@@ -8,6 +8,7 @@ function checkEnvVariables() {
     console.log(chalk.green('✓ York University credentials are set.'));
   } else {
     console.log(chalk.red('✗ York University credentials are missing. Please set PPY_USERNAME and PPY_PASSWORD in your .env file.'));
+    process.exit(1);
   }
 
   // Check email notification status and validate values
