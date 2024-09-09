@@ -58,7 +58,8 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
         // Check if the user has reached the maximum allowable credits
         if (status === 1) {
           console.log("Too many credits, ending execution.");
-          sendErrorGmail("Ended execution because you are full on allowable credits for this session. Try dropping another course.");
+          const body = "Ended execution because you are full on allowable credits for this session. Try dropping another course.";
+          await sendErrorGmail(body);
           await browser.close();
           return;
         }
@@ -67,7 +68,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
         if (listOfCourses.length < previousLength) {
 
           const enrolledCourses = enroll_array.filter(course => !listOfCourses.includes(course));
-          sendSuccessfulEnrolmentGmail(enrolledCourses);
+          await sendSuccessfulEnrolmentGmail(enrolledCourses);
         }
 
         if (listOfCourses.length === 0) {
@@ -91,7 +92,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
         // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
         if (retryCount >= maxRetries - 1) {
           console.log('Max retry limit reached. Terminating the bot.');
-          sendErrorGmail(error.message);
+          await sendErrorGmail(error.message);
           break;
         }
         decrementReservedCooldowns(listOfCourses, MAINTENANCE_WAIT_TIME);
@@ -101,7 +102,7 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
 
       } else {
         console.log('Unknown error occurred, terminating the bot.');
-        sendErrorGmail(error.message);
+        await sendErrorGmail(error.message);
         break;
       }
     }
@@ -160,15 +161,15 @@ function logRemainingCourses(listOfCourses) {
   console.log(`Remaining courses: ${remainingCourses}`);
 }
 
-function sendSuccessfulEnrolmentGmail(enrolledCourses) {
+async function sendSuccessfulEnrolmentGmail(enrolledCourses) {
   const courseDescriptions = enrolledCourses.map(course => course.getFullDescription()).join('\n');
   const subject = 'Course Enrollment Success';
   const body = `Successfully enrolled in ${enrolledCourses.length} course(s):\n\n${courseDescriptions}`;
-  sendGmailNotification(subject, body);
+  await sendGmailNotification(subject, body);
 }
 
-function sendErrorGmail(error) {
+async function sendErrorGmail(error) {
   const subject = 'Course Enrollment Error';
   const body = `An error occurred during course enrollment: ${error}`;
-  sendGmailNotification(subject, body);
+  await sendGmailNotification(subject, body);
 }
