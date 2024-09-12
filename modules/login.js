@@ -36,6 +36,13 @@ async function ensureLoggedIn(page) {
   }
 }
 
+async function loginWithDUO(page) {
+  if (await isLoggedOut(page)) {
+    await ppyLogin(page);
+    await duoLogin(page);
+  }
+}
+
 async function duoLogin(page) {
   console.log("Signing into duo. You have 90 seconds to authenticate.");
   await page.waitForSelector('#trust-browser-button', { timeout: 90000 });
@@ -47,5 +54,6 @@ async function duoLogin(page) {
 module.exports = {
   ensureLoggedIn,
   ppyLogin,
-  duoLogin
+  duoLogin,
+  loginWithDUO
 };

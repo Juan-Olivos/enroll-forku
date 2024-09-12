@@ -1,4 +1,4 @@
-const { ppyLogin, duoLogin, ensureLoggedIn } = require("./login");
+const { ppyLogin, duoLogin, ensureLoggedIn, loginWithDUO } = require("./login");
 const xpath = require('xpath');
 const { DOMParser } = require('xmldom');
 
@@ -26,8 +26,7 @@ async function addNameToCourses(page, listOfCourses) {
     await page.goto(url, { waitUntil: 'networkidle0' });
 
     // First time login needs DUO authentication
-    await ppyLogin(page);
-    await duoLogin(page);
+    await loginWithDUO(page);
     
     await page.waitForSelector('.pretty-print', { timeout: 90000 });
     
