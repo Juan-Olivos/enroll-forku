@@ -83,7 +83,7 @@ async function updateCourseStates(page, listOfCourses) {
       // Parse the XML to find the course name
       const openSeats = parseXMLForOpenSeats(xmlText, course.catalogCode);
       
-      if (openSeats === 0 || openSeats === -1) {
+      if (openSeats <= 0) {
         course.state = "Full";
       } else {
         course.state = "Available";
