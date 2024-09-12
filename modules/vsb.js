@@ -35,12 +35,6 @@ async function addNameToCourses(page, listOfCourses) {
       const pre = document.querySelector('.pretty-print');
       return pre ? pre.textContent : null;
     });
-    if (xmlText === "System Loading. Try again in 0-3 minutes.") {
-      console.log("Wait 30 minutes due to scheduled maintenance on the server.");
-      await new Promise((resolve) => setTimeout(resolve, 1800000)); // 30 minutes
-      addNameToCourses(page, [course]);
-      continue;
-    }
 
     if (xmlText) {
       // Parse the XML to find the course name

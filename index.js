@@ -12,6 +12,7 @@ require("dotenv").config();
 
 const WAIT_INTERVAL = 300000; // 5 minutes
 const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
+const MAX_RETRIES = 3;
 
 (async () => {
   console.log(chalk.blue('=== York University Course Enrollment Bot ===\n'));
@@ -36,10 +37,14 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
 
   const page = await browser.newPage();
 
-  await addNameToCourses(page, listOfCourses);
+  try {
+    await addNameToCoursesWithRetry(page, listOfCourses);
+  } catch (error) {
+    console.error('Failed to add name to courses:', error);
+    await sendErrorGmail(error.message)
+  }
 
   let retryCount = 0;
-  const maxRetries = 3;
 
   // Continously check if course seats are Full or Available, and enroll in Available courses.
   // To prevent enrollment spam, Reserved courses are given a 3 hour cooldown.
@@ -85,27 +90,24 @@ const MAINTENANCE_WAIT_TIME = 900000; // 15 minutes
       await page.reload();
       retryCount = 0;
     } catch (error) {
-
+      // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
+      if (retryCount >= MAX_RETRIES) {
+        console.log('Max retry limit reached. Terminating the bot.');
+        await sendErrorGmail(error.message);
+        throw error
+      }
       // Handles server maintenance @ 12:00 AM
       if (error instanceof TimeoutError) {
-
-        // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
-        if (retryCount >= maxRetries - 1) {
-          console.log('Max retry limit reached. Terminating the bot.');
-          console.log(error.stack);
-          await sendErrorGmail(error.message);
-          break;
-        }
         decrementReservedCooldowns(listOfCourses, MAINTENANCE_WAIT_TIME);
-        console.log('Potential server maintenance detected, waiting 15 minutes...');
+        console.log(`Potential server maintenance detected. Waiting ${MAINTENANCE_WAIT_TIME/6000} minutes...`);
+        console.log(`Attempt ${retryCount + 1}/${MAX_RETRIES}.`);
         await new Promise((resolve) => setTimeout(resolve, MAINTENANCE_WAIT_TIME));
         retryCount++;
 
       } else {
         console.log('Unknown error occurred, terminating the bot.');
-        console.log(error.stack);
         await sendErrorGmail(error.message);
-        break;
+        throw error;
       }
     }
   }
@@ -174,4 +176,28 @@ async function sendErrorGmail(error) {
   const subject = 'Course Enrollment Error';
   const body = `An error occurred during course enrollment: ${error}`;
   await sendGmailNotification(subject, body);
+}
+
+async function addNameToCoursesWithRetry(page, listOfCourses, retryCount = 0) {
+  try {
+    return await addNameToCourses(page, listOfCourses);
+  } catch (error) {
+    // More than 3 consecutive failures is no longer likely to be a server maintenance issue; terminate the bot
+    if (retryCount >= MAX_RETRIES) {
+      console.log('Max retry limit reached. Terminating the bot.');
+      await sendErrorGmail(error.message);
+      throw error;
+    }
+    // Handles server maintenance @ 12:00 AM
+    if (error instanceof TimeoutError) {
+      console.log(`Potential server maintenance detected. Waiting ${MAINTENANCE_WAIT_TIME/6000} minutes...`);
+      console.log(`Attempt ${retryCount + 1}/${MAX_RETRIES}.`);
+      await new Promise((resolve) => setTimeout(resolve, MAINTENANCE_WAIT_TIME));
+      return addNameToCoursesWithRetry(page, listOfCourses, retryCount + 1);
+    } else {
+      console.log('Unknown error occurred, terminating the bot.');
+      await sendErrorGmail(error.message);
+      throw error;
+    }
+  }
 }
