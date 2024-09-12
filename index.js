@@ -37,12 +37,7 @@ const MAX_RETRIES = 3;
 
   const page = await browser.newPage();
 
-  try {
-    await addNameToCoursesWithRetry(page, listOfCourses);
-  } catch (error) {
-    console.error('Failed to add name to courses:', error);
-    await sendErrorGmail(error.message)
-  }
+  await addNameToCoursesWithRetry(page, listOfCourses);
 
   let retryCount = 0;
 
@@ -94,7 +89,7 @@ const MAX_RETRIES = 3;
       if (retryCount >= MAX_RETRIES) {
         console.log('Max retry limit reached. Terminating the bot.');
         await sendErrorGmail(error.message);
-        throw error
+        throw error;
       }
       // Handles server maintenance @ 12:00 AM
       if (error instanceof TimeoutError) {
