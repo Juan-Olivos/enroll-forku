@@ -45,10 +45,12 @@ async function loginWithDUO(page) {
 
 async function duoLogin(page) {
   console.log("Signing into duo. You have 90 seconds to authenticate.");
+  const duoCodeHandle = await page.waitForSelector('.verification-code', { timeout: 90000 });
+  let duoCode = await duoCodeHandle.evaluate((el) => el.textContent);
+  console.log(`Enter code in Duo Mobile: ${duoCode}`);
   await page.waitForSelector('#trust-browser-button', { timeout: 90000 });
-  console.log("Successfully authenticated.");
   await page.click('#trust-browser-button');
-  console.log("Done with DUO login");
+  console.log("Duo login process completed successfully.");
 }
 
 module.exports = {
