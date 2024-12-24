@@ -87,7 +87,7 @@ async function createNewPage(browser) {
 
   await new Promise((resolve) => setTimeout(resolve, 10000));
   await page.waitForSelector('select[name="5.5.1.27.1.11.0"]');
-  await page.select('select[name="5.5.1.27.1.11.0"]', "2");
+  await page.select('select[name="5.5.1.27.1.11.0"]', "1");
   await page.waitForSelector("input[type=submit]");
   await page.click("input[type=submit]");
 
