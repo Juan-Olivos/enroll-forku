@@ -6,7 +6,7 @@ const readline = require("readline");
 const { TimeoutError } = require('puppeteer');
 const { enroll } = require("./modules/rem");
 const { updateCourseStates, addNameToCourses } = require("./modules/vsb");
-const { sendGmailNotification } = require("./modules/notifications");
+const { sendGmailNotification, sendSuccessfulEnrolmentGmail, sendErrorGmail} = require("./modules/notifications");
 const { checkEnvVariables } = require("./modules/configCheck");
 require("dotenv").config();
 
@@ -158,19 +158,6 @@ function logNoCoursesReady() {
 function logRemainingCourses(listOfCourses) {
   const remainingCourses = listOfCourses.map(course => course.catalogCode).join(' ');
   console.log(`Remaining courses: ${remainingCourses}`);
-}
-
-async function sendSuccessfulEnrolmentGmail(enrolledCourses) {
-  const courseDescriptions = enrolledCourses.map(course => course.getFullDescription()).join('\n');
-  const subject = 'Course Enrollment Success';
-  const body = `Successfully enrolled in ${enrolledCourses.length} course(s):\n\n${courseDescriptions}`;
-  await sendGmailNotification(subject, body);
-}
-
-async function sendErrorGmail(error) {
-  const subject = 'Course Enrollment Error';
-  const body = `An error occurred during course enrollment: ${error}`;
-  await sendGmailNotification(subject, body);
 }
 
 async function addNameToCoursesWithRetry(page, listOfCourses, retryCount = 0) {

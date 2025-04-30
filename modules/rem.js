@@ -85,15 +85,27 @@ async function createNewPage(browser) {
   const page = await browser.newPage();
   await page.goto(REM_url);
 
-  await new Promise((resolve) => setTimeout(resolve, 10000));
   await page.waitForSelector('select[name="5.5.1.27.1.11.0"]');
-  await page.select('select[name="5.5.1.27.1.11.0"]', "2");
+
+  const termValue = await page.evaluate(() => {
+    const select = document.querySelector('select[name="5.5.1.27.1.11.0"]');
+    const options = Array.from(select.options);
+    const summerOption = options.find(opt => opt.textContent.trim() === "Summer 2025");
+    return summerOption ? summerOption.value : null;
+  });
+
+  if (!termValue) {
+    throw new Error("Could not find option for Summer 2025");
+  }
+
+  await page.select('select[name="5.5.1.27.1.11.0"]', termValue);
   await page.waitForSelector("input[type=submit]");
   await page.click("input[type=submit]");
 
   await new Promise((resolve) => setTimeout(resolve, 10000));
   return page;
 }
+
 
 module.exports = {
   enroll,

@@ -1,4 +1,5 @@
 const { ppyLogin, duoLogin, ensureLoggedIn, loginWithDUO } = require("./login");
+const { sendGmailNotification, sendSuccessfulEnrolmentGmail, sendErrorGmail} = require("./notifications");
 const xpath = require('xpath');
 const { DOMParser } = require('xmldom');
 
@@ -71,22 +72,45 @@ async function updateCourseStates(page, listOfCourses) {
     return pre ? pre.textContent : null;
   });
 
+  const changedCourses = [];
+
   if (xmlText) {
     for (const course of listOfCourses) {
-      // Parse the XML to find the course name
       const openSeats = parseXMLForOpenSeats(xmlText, course.catalogCode);
       
       if (openSeats <= 0) {
         course.state = "Full";
-        console.log(`Course ${course.name} is full with ${openSeats} seats.`);
+        // console.log(`Course ${course.name} is full with ${openSeats} seats.`);
       } else {
+        if (course.state === "Full") {
+          changedCourses.push({
+            name: course.name,
+            catalogCode: course.catalogCode,
+            seats: openSeats
+          });
+        }
         course.state = "Available";
         console.log(`Course ${course.name} is available with ${openSeats} seats.`);
       }
     }
-  } 
+
+    if (changedCourses.length > 0) {
+      const subject = "Course Availability Update";
+      const body = changedCourses.map(c => 
+        `${c.name} (${c.catalogCode}) is now available with ${c.seats} seats.`
+      ).join('\n') + '\n\nAttempting to enroll.';
+      
+
+      sendGmailNotification(subject, body).catch(err => {
+        console.error("Failed to send email:", err);
+      });
+      
+    }
+  }
+
   return listOfCourses;
 }
+
 
 function parseXMLForOpenSeats(xmlText, targetKey) {
   const parser = createSilentDomParser();
