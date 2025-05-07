@@ -1,5 +1,3 @@
-const UsedDuoCodeException = require("./exception");
-
 async function isLoggedOut(page) {
   const url = await page.url();
   return url.includes("passportyork");
