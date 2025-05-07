@@ -94,7 +94,7 @@ const MAX_RETRIES = 3;
       // Handles server maintenance @ 12:00 AM
       if (error instanceof TimeoutError) {
         decrementReservedCooldowns(listOfCourses, MAINTENANCE_WAIT_TIME);
-        console.log(`Potential server maintenance detected. Waiting ${MAINTENANCE_WAIT_TIME/6000} minutes...`);
+        console.log(`Potential server maintenance detected. Waiting ${MAINTENANCE_WAIT_TIME/60000} minutes...`);
         console.log(`Attempt ${retryCount + 1}/${MAX_RETRIES}.`);
         await new Promise((resolve) => setTimeout(resolve, MAINTENANCE_WAIT_TIME));
         retryCount++;
@@ -172,7 +172,7 @@ async function addNameToCoursesWithRetry(page, listOfCourses, retryCount = 0) {
     }
     // Handles server maintenance @ 12:00 AM
     if (error instanceof TimeoutError) {
-      console.log(`Potential server maintenance detected. Waiting ${MAINTENANCE_WAIT_TIME/6000} minutes...`);
+      console.log(`Potential server maintenance detected. Waiting ${MAINTENANCE_WAIT_TIME/60000} minutes...`);
       console.log(`Attempt ${retryCount + 1}/${MAX_RETRIES}.`);
       await new Promise((resolve) => setTimeout(resolve, MAINTENANCE_WAIT_TIME));
       return addNameToCoursesWithRetry(page, listOfCourses, retryCount + 1);
