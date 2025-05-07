@@ -2,6 +2,7 @@ const { ppyLogin, duoLogin, ensureLoggedIn, loginWithDUO } = require("./login");
 const { sendGmailNotification, sendSuccessfulEnrolmentGmail, sendErrorGmail} = require("./notifications");
 const xpath = require('xpath');
 const { DOMParser } = require('xmldom');
+const { SystemLoadingError } = require("./exception");
 
 const TERM = "2024115117"; // Summer 2025
 const BASE_URL_ADD = "https://schedulebuilder.yorku.ca/vsb/add_suggest.jsp?cams=0_1_2_3_4_5_6";
@@ -38,7 +39,10 @@ async function addNameToCourses(page, listOfCourses) {
     });
 
     if (xmlText) {
-      // Parse the XML to find the course name
+      if (xmlText.includes("System Loading")) {
+        throw new SystemLoadingError("Possible system maintenance detected.");
+      }
+    
       const courseName = parseXMLForCourseName(xmlText, course.catalogCode);
       if (courseName) {
         course.name = courseName;
