@@ -1,3 +1,5 @@
+const { academicSession_rem } = require('./constants');
+
 const remSelectors = {
   addACourse: 'input[title="Add a Course"]',
   catalogueInput: 'input[type="text"]',
@@ -86,16 +88,15 @@ async function createNewPage(browser) {
   await page.goto(REM_url);
 
   await page.waitForSelector('select[name="5.5.1.27.1.11.0"]');
-
-  const termValue = await page.evaluate(() => {
+  const termValue = await page.evaluate((academicSession_rem) => {
     const select = document.querySelector('select[name="5.5.1.27.1.11.0"]');
     const options = Array.from(select.options);
-    const summerOption = options.find(opt => opt.textContent.trim() === "Summer 2025");
-    return summerOption ? summerOption.value : null;
-  });
+    const academicSessionOption = options.find(opt => opt.textContent.trim() === academicSession_rem);
+    return academicSessionOption ? academicSessionOption.value : null;
+  }, academicSession_rem);
 
   if (!termValue) {
-    throw new Error("Could not find option for Summer 2025");
+    throw new Error("Could not find option for provided academic session.");
   }
 
   await page.select('select[name="5.5.1.27.1.11.0"]', termValue);

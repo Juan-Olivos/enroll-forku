@@ -1,10 +1,11 @@
 const { ppyLogin, duoLogin, ensureLoggedIn, loginWithDUO } = require("./login");
 const { sendGmailNotification, sendSuccessfulEnrolmentGmail, sendErrorGmail} = require("./notifications");
+const { termQueryParam_vsb } = require('./constants');
 const xpath = require('xpath');
 const { DOMParser } = require('xmldom');
 const { SystemLoadingError } = require("./exception");
 
-const TERM = "2024115117"; // Summer 2025
+const TERM = termQueryParam_vsb;
 const BASE_URL_ADD = "https://schedulebuilder.yorku.ca/vsb/add_suggest.jsp?cams=0_1_2_3_4_5_6";
 const BASE_URL_GET_CLASS = "https://schedulebuilder.yorku.ca/vsb/getclassdata.jsp?nouser=1";
 
